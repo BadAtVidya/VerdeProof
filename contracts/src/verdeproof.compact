@@ -1,0 +1,760 @@
+pragma language_version >= 0.23;
+
+import CompactStandardLibrary;
+import "schnorr" prefix Schnorr_;
+
+export { Schnorr_SchnorrSignature };
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VerdeProof — privacy-preserving compliance proofs
+//
+// Suppliers prove that a product meets a sustainability / material requirement
+// (recycled content, carbon limits, restricted chemicals, renewables, sourcing,
+// certifications, ESG ...) WITHOUT ever exposing the confidential measurement.
+//
+//   Trusted lab tests the product  →  issues a signed credential
+//   Supplier presents a proof      →  "requirement met" (or selective detail)
+//   Buyer / consumer / regulator   →  verifies on-chain, raw value stays hidden
+//
+//   Example: requirement "recycled content ≥ 50%", actual = 65%.
+//   The chain records only:  Req ≥ 50%  →  ✅ PASSED.  The 65% never leaves
+//   the supplier's machine unless the supplier explicitly chooses to disclose.
+//
+// FEATURES (mapped to product requirements)
+//   1. Multi trusted labs/auditors   — labs: Map, any active lab can issue.
+//                                      No single point of trust.
+//   2. Credential expiration         — validUntil enforced against block time
+//                                      at presentation: old certs auto-invalid.
+//   3. Credential revocation         — issuing lab (or admin) revokes; every
+//                                      later presentation fails.
+//   4. Configurable thresholds       — buyers create their own requirements
+//                                      (metric + threshold + direction).
+//   5. Selective disclosure          — supplier chooses, per presentation,
+//                                      which extra fields to reveal beyond
+//                                      pass/fail (value, report hash).
+//   6. Reusable evidence             — one credential can satisfy many
+//                                      requirements/buyers; replay is prevented
+//                                      with challenge-bound nullifiers.
+//   7. QR verification               — every successful presentation writes a
+//                                      public VerificationRecord; a QR code
+//                                      carrying (contract, verificationId) lets
+//                                      anyone read the verified claim.
+//
+// PRIVACY MODEL
+//   Public  : lab registry, requirements (thresholds are policy, not data),
+//             credential commitments + metadata (metric, lab, window, product,
+//             pseudonymous supplier key), verification records, nullifiers,
+//             counters, anything the supplier explicitly disclosed.
+//   Private : the measured value, the raw report hash, the blinding nonce,
+//             the lab signature, role secret keys. Never leaves the wallet.
+//
+// SIGNATURE MODEL
+//   The lab signs the evidence commitment with a Jubjub Schnorr key; the
+//   circuits verify that signature IN-CIRCUIT against the admin-registered
+//   signing key of an active lab. Forged or unauthorized certificates fail
+//   at proof time, not at the UI.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+
+// ── Newtypes ──────────────────────────────────────────────────────────────────
+
+export new type CallerSecret = Bytes<32>;
+export new type AdminKey = Bytes<32>;
+export new type LabOperatorKey = Bytes<32>;
+export new type SupplierKey = Bytes<32>;
+export new type BuyerKey = Bytes<32>;
+export new type ProductId = Bytes<32>;
+export new type CredentialId = Bytes<32>;
+export new type RequirementId = Bytes<32>;
+export new type VerificationId = Bytes<32>;
+export new type VerifierChallenge = Bytes<32>;
+
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+
+// Extensible claim categories. Values are metric-unit scaled:
+//   - percentage-like metrics (recycled content, renewable share, ESG score)
+//       use basis points: 5,000 = 50.00%, 10,000 = 100.00%
+//   - carbon intensity   : gCO2e per functional unit (e.g. gCO2e/kg)
+//   - restricted chemical: ppm (0 = not detected)
+//   - certification      : scheme code agreed off-chain (0 = invalid)
+export enum MetricType {
+  RECYCLED_CONTENT,
+  CARBON_INTENSITY,
+  RESTRICTED_CHEMICAL,
+  RENEWABLE_ENERGY,
+  RESPONSIBLE_SOURCING,
+  CERTIFICATION,
+  ESG_SCORE
+}
+
+export enum CredentialStatus { ACTIVE, REVOKED }
+
+// PASSED    — threshold requirement satisfied by a valid credential
+// DISCLOSED — validity + supplier-chosen disclosure, no threshold involved
+//             (regulator path)
+export enum VerificationResult { PASSED, DISCLOSED }
+
+export enum AdminAction { SET_PAUSED, TRANSFER_ADMIN }
+export enum LabAction { REGISTER, UPDATE, SET_ACTIVE, DELETE }
+
+
+// ── Public record types ───────────────────────────────────────────────────────
+
+export struct LabRecord {
+  operatorKey: LabOperatorKey;
+  signingKey: JubjubPoint;
+  nameHash: Bytes<32>;
+  active: Boolean;
+  revision: Uint<16>;
+}
+
+// A buyer's bar. Thresholds are configurable per requirement and the
+// comparison direction is chosen by the buyer:
+//   isUpperBound == false → evidence value must be >= threshold (recycled ≥ 50%)
+//   isUpperBound == true  → evidence value must be <= threshold (carbon ≤ 500)
+export struct RequirementRecord {
+  buyer: BuyerKey;
+  metric: MetricType;
+  threshold: Uint<32>;
+  isUpperBound: Boolean;
+  validFrom: Uint<64>;
+  validUntil: Uint<64>;
+  active: Boolean;
+  revision: Uint<16>;
+  verificationCount: Uint<16>;
+}
+
+// On-chain shadow of a lab-issued credential. The commitment hides the
+// measured value and report hash; metadata here is policy, not confidential.
+export struct CredentialRecord {
+  commitment: Bytes<32>;
+  supplier: SupplierKey;
+  productId: ProductId;
+  metric: MetricType;
+  labId: Uint<16>;
+  issuedAt: Uint<64>;
+  validUntil: Uint<64>;
+  status: CredentialStatus;
+  revision: Uint<16>;
+}
+
+// Supplier's per-presentation choice of what to reveal beyond pass/fail.
+// (Flattened into circuit args at the call sites; this type documents the shape
+// for the SDK.)
+export struct Disclosure {
+  valueDisclosed: Boolean;
+  disclosedValue: Uint<32>;
+  reportDisclosed: Boolean;
+  disclosedReportHash: Bytes<32>;
+}
+
+// The public, QR-readable result of one presentation.
+export struct VerificationRecord {
+  requirementId: RequirementId;
+  credentialId: CredentialId;
+  supplier: SupplierKey;
+  buyer: BuyerKey;
+  metric: MetricType;
+  result: VerificationResult;
+  evidenceCommitment: Bytes<32>;
+  labId: Uint<16>;
+  valueDisclosed: Boolean;
+  disclosedValue: Uint<32>;
+  reportDisclosed: Boolean;
+  disclosedReportHash: Bytes<32>;
+  nullifier: Bytes<32>;
+}
+
+
+// ── Private types (witness-only, never on the ledger) ─────────────────────────
+
+// The lab's test package. Handed to the supplier off-chain; both the issuing
+// lab (at issuance) and the presenting supplier (at verification) hold it in
+// their private state.
+struct Evidence {
+  metric: MetricType;
+  actualValue: Uint<32>;
+  productId: ProductId;
+  inspectedAt: Uint<64>;
+  validUntil: Uint<64>;
+  reportHash: Bytes<32>;
+  supplier: SupplierKey;
+  commitmentNonce: Bytes<32>;
+  signature: Schnorr_SchnorrSignature;
+}
+
+struct EvidenceCommitInput {
+  productId: ProductId;
+  supplier: SupplierKey;
+  metric: MetricType;
+  actualValue: Uint<32>;
+  inspectedAt: Uint<64>;
+  validUntil: Uint<64>;
+  reportHash: Bytes<32>;
+}
+
+
+// ── Ledger (public state) ─────────────────────────────────────────────────────
+
+export ledger admin: AdminKey;
+export ledger paused: Boolean;
+
+// Multi-trust: many independent labs/auditors, any active one can issue.
+export ledger labs: Map<Uint<16>, LabRecord>;
+export ledger totalLabs: Counter;
+
+// Buyer-defined, configurable requirements.
+export ledger requirements: Map<RequirementId, RequirementRecord>;
+export ledger totalRequirements: Counter;
+
+// Lab-issued credential commitments.
+export ledger credentials: Map<CredentialId, CredentialRecord>;
+export ledger totalCredentials: Counter;
+
+// Public, QR-readable verification results.
+export ledger verifications: Map<VerificationId, VerificationRecord>;
+export ledger totalVerifications: Counter;
+
+// Challenge-bound presentation nullifiers (anti-replay).
+export ledger usedNullifiers: Set<Bytes<32>>;
+
+
+// ── Witnesses (private — never leave the user's machine) ─────────────────────
+
+witness callerSecret(): CallerSecret;
+witness pendingEvidence(): Evidence;
+
+
+// ── Construction ──────────────────────────────────────────────────────────────
+
+constructor() {
+  admin = disclose(deriveAdminKey(callerSecret()));
+  paused = false;
+}
+
+
+// ── Identity derivation (domain-separated, deterministic) ─────────────────────
+
+export pure circuit deriveAdminKey(secret: CallerSecret): AdminKey {
+  return persistentHash<[Bytes<19>, CallerSecret]>([
+    "verdeproof:admin:v1",
+    secret
+  ]) as AdminKey;
+}
+
+export pure circuit deriveSupplierKey(secret: CallerSecret): SupplierKey {
+  return persistentHash<[Bytes<22>, CallerSecret]>([
+    "verdeproof:supplier:v1",
+    secret
+  ]) as SupplierKey;
+}
+
+export pure circuit deriveLabOperatorKey(secret: CallerSecret): LabOperatorKey {
+  return persistentHash<[Bytes<26>, CallerSecret]>([
+    "verdeproof:lab-operator:v1",
+    secret
+  ]) as LabOperatorKey;
+}
+
+export pure circuit deriveBuyerKey(secret: CallerSecret): BuyerKey {
+  return persistentHash<[Bytes<19>, CallerSecret]>([
+    "verdeproof:buyer:v1",
+    secret
+  ]) as BuyerKey;
+}
+
+
+// ── Internal helpers ──────────────────────────────────────────────────────────
+
+circuit makeEvidenceCommitment(evidence: Evidence): Bytes<32> {
+  return persistentCommit<EvidenceCommitInput>(
+    EvidenceCommitInput {
+      productId: evidence.productId,
+      supplier: evidence.supplier,
+      metric: evidence.metric,
+      actualValue: evidence.actualValue,
+      inspectedAt: evidence.inspectedAt,
+      validUntil: evidence.validUntil,
+      reportHash: evidence.reportHash
+    },
+    evidence.commitmentNonce
+  );
+}
+
+circuit assertAdmin(): [] {
+  assert(admin == deriveAdminKey(callerSecret()), "Only admin may perform this operation");
+}
+
+circuit assertNotPaused(): [] {
+  assert(!paused, "Contract is paused");
+}
+
+// Returns the lab record so callers avoid a second lookup.
+circuit assertLabOperator(labId: Uint<16>): LabRecord {
+  assert(labId > 0, "Lab ID zero is reserved");
+  assert(labs.member(labId), "Lab not found");
+  const lab = labs.lookup(labId);
+  assert(lab.active, "Lab is inactive");
+  assert(
+    lab.operatorKey == deriveLabOperatorKey(callerSecret()),
+    "Only the lab operator may perform this operation"
+  );
+  return lab;
+}
+
+// In-circuit Schnorr check of the lab signature over the evidence commitment.
+circuit verifyEvidenceSignature(
+  evidence: Evidence,
+  commitment: Bytes<32>,
+  labId: Uint<16>,
+  signingKey: JubjubPoint
+): [] {
+  const message: Vector<4, Field> = [
+    transientHash<Bytes<28>>("verdeproof:credential-sig:v1"),
+    transientHash<Bytes<32>>(commitment),
+    labId as Field,
+    1 as Field
+  ];
+  Schnorr_schnorrVerify<4>(message, evidence.signature, signingKey);
+}
+
+// Known metric codes only — protects the registry from malformed SDK input.
+export pure circuit isKnownMetric(metric: MetricType): Boolean {
+  return metric == MetricType.RECYCLED_CONTENT ||
+    metric == MetricType.CARBON_INTENSITY ||
+    metric == MetricType.RESTRICTED_CHEMICAL ||
+    metric == MetricType.RENEWABLE_ENERGY ||
+    metric == MetricType.RESPONSIBLE_SOURCING ||
+    metric == MetricType.CERTIFICATION ||
+    metric == MetricType.ESG_SCORE;
+}
+
+// Challenge recomputation for the off-chain lab signer (SDK-side signing).
+export pure circuit evidenceChallenge(
+  ann_x: Field,
+  ann_y: Field,
+  pk_x: Field,
+  pk_y: Field,
+  message: Vector<4, Field>
+): Field {
+  return Schnorr_schnorrChallenge(ann_x, ann_y, pk_x, pk_y, message);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GOVERNANCE — platform admin
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export circuit manageAdmin(
+  action: AdminAction,
+  nextPaused: Boolean,
+  nextAdmin: AdminKey
+): [] {
+  assertAdmin();
+  const publicAction = disclose(action);
+  if (publicAction == AdminAction.SET_PAUSED) {
+    paused = disclose(nextPaused);
+  } else {
+    assert(nextAdmin != admin, "New admin must differ from current admin");
+    admin = disclose(nextAdmin);
+  }
+}
+
+// Register / update / enable / disable trusted labs and auditors.
+// Multi-trust: the registry is a map, not a single hardcoded key.
+export circuit manageLab(
+  action: LabAction,
+  labId: Uint<16>,
+  operatorKey: LabOperatorKey,
+  signingKey: JubjubPoint,
+  nameHash: Bytes<32>,
+  active: Boolean
+): [] {
+  assertAdmin();
+  const publicAction = disclose(action);
+  const publicLabId = disclose(labId);
+  assert(publicLabId > 0, "Lab ID zero is reserved");
+  if (publicAction == LabAction.REGISTER) {
+    assert(!labs.member(publicLabId), "Lab already exists");
+    labs.insert(
+      publicLabId,
+      disclose(LabRecord {
+        operatorKey: operatorKey,
+        signingKey: signingKey,
+        nameHash: nameHash,
+        active: true,
+        revision: 1
+      })
+    );
+    totalLabs.increment(1);
+  } else {
+    assert(labs.member(publicLabId), "Lab not found");
+    const existing = labs.lookup(publicLabId);
+    assert(existing.revision < 65535, "Lab revision limit reached");
+    if (publicAction == LabAction.UPDATE) {
+      labs.insert(
+        publicLabId,
+        disclose(LabRecord {
+          operatorKey: operatorKey,
+          signingKey: signingKey,
+          nameHash: nameHash,
+          active: existing.active,
+          revision: (existing.revision + 1) as Uint<16>
+        })
+      );
+    } else {
+      if (publicAction == LabAction.DELETE) {
+        assert(existing.active, "Lab already inactive");
+      }
+      labs.insert(
+        publicLabId,
+        LabRecord {
+          operatorKey: existing.operatorKey,
+          signingKey: existing.signingKey,
+          nameHash: existing.nameHash,
+          active: publicAction == LabAction.DELETE ? false : disclose(active),
+          revision: (existing.revision + 1) as Uint<16>
+        }
+      );
+    }
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BUYERS — configurable requirements
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Buyers set their own bar per metric. The threshold is policy, so it is
+// public by design; the supplier's data that satisfies it stays private.
+export circuit createRequirement(
+  requirementId: RequirementId,
+  metric: MetricType,
+  threshold: Uint<32>,
+  isUpperBound: Boolean,
+  validFrom: Uint<64>,
+  validUntil: Uint<64>
+): [] {
+  assertNotPaused();
+  const publicRequirementId = disclose(requirementId);
+  assert(isKnownMetric(metric), "Unknown metric type");
+  assert(!requirements.member(publicRequirementId), "Requirement ID already exists");
+  assert(isUpperBound || threshold > 0, "Lower-bound threshold must be greater than zero");
+  assert(validUntil == 0 || validUntil > validFrom, "Requirement window is invalid");
+
+  requirements.insert(
+    publicRequirementId,
+    disclose(RequirementRecord {
+      buyer: deriveBuyerKey(callerSecret()),
+      metric: metric,
+      threshold: threshold,
+      isUpperBound: isUpperBound,
+      validFrom: validFrom,
+      validUntil: validUntil,
+      active: true,
+      revision: 1,
+      verificationCount: 0
+    })
+  );
+  totalRequirements.increment(1);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LABS — credential issuance & revocation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// The issuing lab holds the test evidence in private state, commits to it and
+// publishes only the commitment + policy metadata. The lab signature over the
+// commitment is verified in-circuit, so only correctly signed evidence can be
+// registered.
+export circuit issueCredential(credentialId: CredentialId, labId: Uint<16>): [] {
+  assertNotPaused();
+  const publicCredentialId = disclose(credentialId);
+  const publicLabId = disclose(labId);
+  assert(!credentials.member(publicCredentialId), "Credential ID already exists");
+  const lab = assertLabOperator(publicLabId);
+
+  const evidence = pendingEvidence();
+  assert(isKnownMetric(evidence.metric), "Unknown metric type");
+  assert(evidence.validUntil > 0, "Credential must have an expiry");
+  assert(evidence.validUntil > evidence.inspectedAt, "Credential validity window is invalid");
+  assert(
+    !kernel.blockTimeLessThan(disclose(evidence.inspectedAt)),
+    "Inspection time is in the future"
+  );
+  assert(
+    evidence.supplier != default<SupplierKey>,
+    "Evidence must be bound to a supplier key"
+  );
+
+  const commitment = makeEvidenceCommitment(evidence);
+  const publicCommitment = disclose(commitment);
+  verifyEvidenceSignature(evidence, commitment, publicLabId, lab.signingKey);
+
+  credentials.insert(
+    publicCredentialId,
+    disclose(CredentialRecord {
+      commitment: publicCommitment,
+      supplier: evidence.supplier,
+      productId: evidence.productId,
+      metric: evidence.metric,
+      labId: publicLabId,
+      issuedAt: disclose(evidence.inspectedAt),
+      validUntil: disclose(evidence.validUntil),
+      status: CredentialStatus.ACTIVE,
+      revision: 1
+    })
+  );
+  totalCredentials.increment(1);
+}
+
+// Revoke a pulled/incorrect credential. Only the issuing lab — or the platform
+// admin (e.g. misconduct) — can revoke. Every later presentation fails.
+export circuit revokeCredential(credentialId: CredentialId, byAdmin: Boolean): [] {
+  const publicCredentialId = disclose(credentialId);
+  assert(credentials.member(publicCredentialId), "Credential not found");
+  const record = credentials.lookup(publicCredentialId);
+  const publicByAdmin = disclose(byAdmin);
+  if (publicByAdmin) {
+    assertAdmin();
+  } else {
+    assertLabOperator(record.labId);
+  }
+  assert(record.status == CredentialStatus.ACTIVE, "Credential is not active");
+
+  credentials.insert(
+    publicCredentialId,
+    CredentialRecord {
+      commitment: record.commitment,
+      supplier: record.supplier,
+      productId: record.productId,
+      metric: record.metric,
+      labId: record.labId,
+      issuedAt: record.issuedAt,
+      validUntil: record.validUntil,
+      status: CredentialStatus.REVOKED,
+      revision: (record.revision + 1) as Uint<16>
+    }
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUPPLIERS — the core ZK presentations
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Opens a credential: record live, lab still trusted, evidence matches the
+// on-chain commitment, presenter is the bound supplier, signature valid.
+// Returns the pieces the presentation circuits need.
+circuit openLiveCredential(credentialId: CredentialId): [CredentialRecord, Evidence, Bytes<32>] {
+  const publicCredentialId = disclose(credentialId);
+  assert(credentials.member(publicCredentialId), "Credential not found");
+  const record = credentials.lookup(publicCredentialId);
+  assert(record.status == CredentialStatus.ACTIVE, "Credential has been revoked");
+  assert(
+    kernel.blockTimeLessThan(record.validUntil),
+    "Credential has expired"
+  );
+  assert(labs.member(record.labId), "Issuing lab is not registered");
+  const lab = labs.lookup(record.labId);
+  assert(lab.active, "Issuing lab is no longer active");
+
+  const evidence = pendingEvidence();
+  const commitment = makeEvidenceCommitment(evidence);
+  assert(
+    disclose(commitment) == record.commitment,
+    "Evidence does not match the issued credential"
+  );
+  assert(
+    evidence.supplier == deriveSupplierKey(callerSecret()),
+    "Only the credentialed supplier may present this proof"
+  );
+  verifyEvidenceSignature(evidence, commitment, record.labId, lab.signingKey);
+  return [record, evidence, commitment];
+}
+
+// Writes the public QR-readable record, enforces disclosure consistency and
+// burns the challenge-bound nullifier.
+circuit commitPresentation(
+  verificationId: VerificationId,
+  requirementId: RequirementId,
+  buyer: BuyerKey,
+  credentialId: CredentialId,
+  record: CredentialRecord,
+  evidence: Evidence,
+  commitment: Bytes<32>,
+  challenge: VerifierChallenge,
+  valueDisclosed: Boolean,
+  disclosedValue: Uint<32>,
+  reportDisclosed: Boolean,
+  disclosedReportHash: Bytes<32>,
+  result: VerificationResult
+): [] {
+  const publicVerificationId = disclose(verificationId);
+  assert(!verifications.member(publicVerificationId), "Verification ID already exists");
+
+  if (valueDisclosed) {
+    assert(
+      disclose(disclosedValue) == evidence.actualValue,
+      "Disclosed value does not match the evidence"
+    );
+  }
+  if (reportDisclosed) {
+    assert(
+      disclose(disclosedReportHash) == evidence.reportHash,
+      "Disclosed report hash does not match the evidence"
+    );
+  }
+
+  // Challenge-bound nullifier: prevents replay of a proof artifact while the
+  // underlying evidence stays REUSABLE across buyers and requirements.
+  const nullifier = persistentHash<[Bytes<31>, CallerSecret, Bytes<32>, VerifierChallenge]>([
+    "verdeproof:present-nullifier:v1",
+    callerSecret(),
+    commitment,
+    challenge
+  ]);
+  const publicNullifier = disclose(nullifier);
+  assert(!usedNullifiers.member(publicNullifier), "Presentation challenge already consumed");
+  usedNullifiers.insert(publicNullifier);
+
+  verifications.insert(
+    publicVerificationId,
+    disclose(VerificationRecord {
+      requirementId: requirementId,
+      credentialId: credentialId,
+      supplier: record.supplier,
+      buyer: buyer,
+      metric: record.metric,
+      result: result,
+      evidenceCommitment: record.commitment,
+      labId: record.labId,
+      valueDisclosed: disclose(valueDisclosed),
+      disclosedValue: disclose(disclosedValue),
+      reportDisclosed: disclose(reportDisclosed),
+      disclosedReportHash: disclose(disclosedReportHash),
+      nullifier: publicNullifier
+    })
+  );
+  totalVerifications.increment(1);
+}
+
+// THE core circuit. Proves: "a valid, unexpired, unrevoked credential issued by
+// an active trusted lab — bound to me — satisfies THIS requirement's
+// configurable threshold." The measured value is compared against the
+// threshold inside the circuit and is never revealed.
+export circuit presentComplianceProof(
+  requirementId: RequirementId,
+  credentialId: CredentialId,
+  verificationId: VerificationId,
+  challenge: VerifierChallenge,
+  valueDisclosed: Boolean,
+  disclosedValue: Uint<32>,
+  reportDisclosed: Boolean,
+  disclosedReportHash: Bytes<32>
+): [] {
+  assertNotPaused();
+
+  const publicRequirementId = disclose(requirementId);
+  assert(requirements.member(publicRequirementId), "Requirement not found");
+  const requirement = requirements.lookup(publicRequirementId);
+  assert(requirement.active, "Requirement is not active");
+  assert(
+    requirement.validFrom == 0 || !kernel.blockTimeLessThan(requirement.validFrom),
+    "Requirement is not open yet"
+  );
+  assert(
+    requirement.validUntil == 0 || kernel.blockTimeLessThan(requirement.validUntil),
+    "Requirement window has closed"
+  );
+  assert(
+    requirement.verificationCount < 65535,
+    "Requirement verification limit reached"
+  );
+
+  const [record, evidence, commitment] = openLiveCredential(credentialId);
+  assert(
+    evidence.metric == requirement.metric,
+    "Credential metric does not match the requirement"
+  );
+
+  // Threshold check — direction-aware, fully private.
+  if (requirement.isUpperBound) {
+    assert(evidence.actualValue <= requirement.threshold, "Requirement not met");
+  } else {
+    assert(evidence.actualValue >= requirement.threshold, "Requirement not met");
+  }
+
+  commitPresentation(
+    verificationId,
+    publicRequirementId,
+    requirement.buyer,
+    disclose(credentialId),
+    record,
+    evidence,
+    commitment,
+    challenge,
+    valueDisclosed,
+    disclosedValue,
+    reportDisclosed,
+    disclosedReportHash,
+    VerificationResult.PASSED
+  );
+
+  requirements.insert(
+    publicRequirementId,
+    disclose(RequirementRecord {
+      buyer: requirement.buyer,
+      metric: requirement.metric,
+      threshold: requirement.threshold,
+      isUpperBound: requirement.isUpperBound,
+      validFrom: requirement.validFrom,
+      validUntil: requirement.validUntil,
+      active: requirement.active,
+      revision: requirement.revision,
+      verificationCount: (requirement.verificationCount + 1) as Uint<16>
+    })
+  );
+}
+
+// Regulator / buyer "request extra detail" path: proves the credential is
+// valid (trusted active lab, signature, unexpired, unrevoked, bound to the
+// presenter) and reveals exactly the fields the supplier chooses — with no
+// threshold involved.
+export circuit presentDisclosure(
+  credentialId: CredentialId,
+  verificationId: VerificationId,
+  challenge: VerifierChallenge,
+  valueDisclosed: Boolean,
+  disclosedValue: Uint<32>,
+  reportDisclosed: Boolean,
+  disclosedReportHash: Bytes<32>
+): [] {
+  assertNotPaused();
+
+  const [record, evidence, commitment] = openLiveCredential(credentialId);
+  commitPresentation(
+    verificationId,
+    pad(32, "") as RequirementId,
+    pad(32, "") as BuyerKey,
+    disclose(credentialId),
+    record,
+    evidence,
+    commitment,
+    challenge,
+    valueDisclosed,
+    disclosedValue,
+    reportDisclosed,
+    disclosedReportHash,
+    VerificationResult.DISCLOSED
+  );
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// READ-ONLY — QR verification & SDK pre-checks
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// Read-only registry access is served by the indexer/SDK. Keeping these out of
+// the deployed contract reduces the preprod deployment footprint.
