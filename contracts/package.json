@@ -1,0 +1,22 @@
+{
+  "name": "@verdeproof/contract",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "VerdeProof — privacy-preserving compliance proofs on Midnight (Compact contract)",
+  "scripts": {
+    "compact": "compact compile src/verdeproof.compact src/managed/verdeproof",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "build": "npm run compact && npm run typecheck",
+    "test": "npm run compact && vitest run"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "0.16.0",
+    "@midnight-ntwrk/midnight-js-protocol": "4.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.15"
+  }
+}
