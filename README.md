@@ -8,21 +8,12 @@ VerdeProof lets a supplier prove that a product meets a buyer's sustainability o
 
 ## Links
 
-| Resource | Link | Notes |
-|---|---|---|
-| Deployed application | [Open VerdeProof](https://verde-proof.vercel.app/) | Vercel production deployment |
-| Product landing page | [Open locally](http://localhost:3000/) | Run `npm run dev` first |
-| Buyer console | [Open locally](http://localhost:3000/app) | Live preprod contract state |
-| Public verifier | [Open locally](http://localhost:3000/verify) | Reads public verification records |
-| Browser deployment | [Open locally](http://localhost:3000/deploy) | Deploy through 1AM wallet |
-| Demo video | [Watch on Google Drive](https://drive.google.com/file/d/1I5y61NCnGFgnaaJU9TE7HtSNmJ-HCPMQ/view?usp=sharing) | Product walkthrough |
-| Product proposal | [`PROPOSAL.md`](./PROPOSAL.md) | Product and privacy design |
-| Proposal alias | [`proposals.md`](./proposals.md) | Short proposal reference |
-| Compact contract README | [`contracts/README.md`](./contracts/README.md) | Contract setup and commands |
-| Contract source | [`verdeproof.compact`](./contracts/src/verdeproof.compact) | Main Compact contract |
-| Contract tests | [`verdeproof.spec.ts`](./contracts/test/verdeproof.spec.ts) | Vitest contract suite |
-| CI workflow | [`ci.yml`](./.github/workflows/ci.yml) | Compile, test, lint, build |
-| Midnight documentation | [Open Midnight Docs](https://docs.midnight.network/) | Platform reference |
+| Resource | Link |
+|---|---|
+| Live application | [Open VerdeProof](https://verde-proof.vercel.app/) |
+| Demo video | [Watch on Google Drive](https://drive.google.com/file/d/1I5y61NCnGFgnaaJU9TE7HtSNmJ-HCPMQ/view?usp=sharing) |
+| Contract | [`verdeproof.compact`](https://github.com/BadAtVidya/VerdeProof/blob/main/contracts/src/verdeproof.compact) |
+| X | [@VerthProof](https://x.com/VerthProof) |
 
 ## The problem
 
