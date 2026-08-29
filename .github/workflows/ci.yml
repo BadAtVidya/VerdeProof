@@ -12,8 +12,8 @@ jobs:
       run:
         working-directory: contracts
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -21,7 +21,7 @@ jobs:
       - name: Setup Compact compiler
         uses: midnightntwrk/setup-compact-action@v1
         with:
-          compact-version: '0.5.1'
+          compact-version: 'latest'
       - run: npm ci
       - run: npm test
 
@@ -29,8 +29,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: contract
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
