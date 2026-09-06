@@ -23,7 +23,7 @@ On-chain verification record:
 | Platform admin | `deriveAdminKey(secret)` | Register/update/disable labs, pause, revoke, transfer admin |
 | Lab / auditor (many) | `deriveLabOperatorKey(secret)` + Jubjub signing key | Issue credentials, revoke **its own** credentials |
 | Supplier | `deriveSupplierKey(secret)` | Present compliance proofs & choose disclosures |
-| Buyer | `deriveBuyerKey(secret)` | Create configurable requirements, pause them |
+| Buyer | `deriveBuyerKey(secret)` | Create configurable requirements |
 | Consumer / regulator | none needed | Read verification records (QR) |
 
 **Multi-trust:** labs live in a `Map<Uint<16>, LabRecord>` — any *active* registered lab can issue. There is no single issuing key; a compromised or delisted lab stops being able to pass verification the moment it is deactivated.
@@ -65,12 +65,12 @@ Design choice: evidence commitments are **reusable** — one credential can sati
 |---|---|---|
 | `manageAdmin` | admin | Pause / transfer admin |
 | `manageLab` | admin | Lab registry CRUD (multi-trust) |
-| `createRequirement` / `setRequirementActive` | buyer | Configurable thresholds, direction-aware |
+| `createRequirement` | buyer | Configurable thresholds, direction-aware |
 | `issueCredential` | lab | Commit evidence on-chain, verify own signature |
 | `revokeCredential` | issuing lab / admin | Pull a credential |
 | `presentComplianceProof` | supplier | **Core ZK proof:** threshold met, data hidden |
 | `presentDisclosure` | supplier | Validity + supplier-chosen fields |
-| `getVerification` / `getRequirement` / `isCredentialActive` / `isCredentialRevoked` / `isLabActive` / `isLabRegistered` | anyone | Reads for QR verification & SDK pre-checks |
+| indexer state decoding | anyone | Reads for QR verification & SDK pre-checks |
 | `derive*Key`, `isKnownMetric`, `evidenceChallenge` | pure | SDK helpers (identities, validation, signature challenge) |
 
 Metric units: percentage-like metrics use basis points (`5,000` = 50%), carbon uses gCO2e per functional unit, restricted chemicals use ppm (`0` = not detected), certification uses an off-chain scheme code.

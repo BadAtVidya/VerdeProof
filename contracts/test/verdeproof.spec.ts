@@ -44,19 +44,12 @@ describe("VerdeProof deployable surface", () => {
 
     expect(Object.keys(contract.provableCircuits).sort()).toEqual([
       "createRequirement",
-      "getRequirement",
-      "getVerification",
-      "isCredentialActive",
-      "isCredentialRevoked",
-      "isLabActive",
-      "isLabRegistered",
       "issueCredential",
       "manageAdmin",
       "manageLab",
       "presentComplianceProof",
       "presentDisclosure",
       "revokeCredential",
-      "setRequirementActive",
     ]);
 
     expect(Object.keys(pureCircuits).sort()).toEqual([

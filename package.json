@@ -6,7 +6,9 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npm --prefix contracts test",
+    "test:contract": "npm --prefix contracts test"
   },
   "dependencies": {
     "@midnight-ntwrk/compact-js": "2.5.1",
