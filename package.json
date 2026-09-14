@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "npm run build:contract && next build --webpack",
+    "build:contract": "./scripts/build-contract.sh",
     "start": "next start",
     "lint": "eslint",
     "test": "npm --prefix contracts test",
