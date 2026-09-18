@@ -10,6 +10,7 @@ VerdeProof lets a supplier prove that a product meets a buyer's sustainability o
 
 | Resource | Link | Notes |
 |---|---|---|
+| Deployed application | [Open VerdeProof](https://verde-proof.vercel.app/) | Vercel production deployment |
 | Product landing page | [Open locally](http://localhost:3000/) | Run `npm run dev` first |
 | Buyer console | [Open locally](http://localhost:3000/app) | Live preprod contract state |
 | Public verifier | [Open locally](http://localhost:3000/verify) | Reads public verification records |
