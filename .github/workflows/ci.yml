@@ -2,11 +2,15 @@ name: CI
 
 env:
   COMPACT_VERSION: 0.31.1
+  GITHUB_TOKEN: ${{ github.token }}
 
 on:
   push:
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   contract-compile:
