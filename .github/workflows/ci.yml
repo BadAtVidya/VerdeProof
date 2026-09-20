@@ -35,7 +35,7 @@ jobs:
           "$HOME/.local/bin/compact" compile --version
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-package-lock
 
       - name: Compile contract
         run: npm run compact
@@ -68,14 +68,14 @@ jobs:
 
       - name: Install compiler dependencies
         working-directory: contracts
-        run: npm ci
+        run: npm install --no-package-lock
 
       - name: Generate contract artifacts
         working-directory: contracts
         run: npm run compact
 
       - name: Install frontend dependencies
-        run: npm ci
+        run: npm install --no-package-lock
 
       - name: Lint frontend
         run: npm run lint
