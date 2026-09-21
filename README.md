@@ -310,16 +310,26 @@ See [`LAUNCH_USERS.md`](./LAUNCH_USERS.md) for the 20-user Preprod launch cohort
 
 ## Product X Profile
 
-To be added after the product profile is created.
+[VerdeProof on X — @VerthProof](https://x.com/VerthProof)
+
+Profile bio:
+
+> Private compliance proofs for supply chains. Prove the threshold. Keep the raw evidence. Built on Midnight.
+
+Launch posts should link the live Preprod demo, explain the privacy model, and show a real transaction result. Never publish private keys, seed phrases, emails, or raw supplier evidence.
 
 ## Brand Assets
 
-See [`BRAND_BRIEF.md`](./BRAND_BRIEF.md). Logo and banner links remain to be added manually.
+Brand system is documented in [`BRAND_BRIEF.md`](./BRAND_BRIEF.md). Available repository assets:
 
-## Onboarding and Demo
+- Logo treatment: VerdeProof wordmark with `V` proof glyph in the app header.
+- Palette: Forest `#163D32`, Paper `#F4F5ED`, Lime `#C6F07A`, Teal `#49B58D`, Ink `#183029`.
+- Product captures: [`public/screenshots/landing.png`](./public/screenshots/landing.png), [`public/screenshots/console.png`](./public/screenshots/console.png), and [`public/screenshots/verifier.png`](./public/screenshots/verifier.png).
+- Banner direction: redacted measurement moving from lab evidence to a verified checkmark; full concept in `BRAND_BRIEF.md`.
+
+## Onboarding
 
 - [`ONBOARDING.md`](./ONBOARDING.md) — message for launch users.
-- [`DEMO_VIDEO_CHECKLIST.md`](./DEMO_VIDEO_CHECKLIST.md) — final submission recording checklist.
 
 ## CI/CD
 
