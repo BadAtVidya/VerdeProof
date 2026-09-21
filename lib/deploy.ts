@@ -16,7 +16,7 @@ export async function publishRequirement(session: ConnectedSession, thresholdPer
   const id = crypto.getRandomValues(new Uint8Array(32));
   await (submitCallTxAsync as any)(session.providers, {
     compiledContract: makeCompiledContract(),
-    contractAddress: "ee2bba3a7df6ffc726d29d8b020ee70efbec5aed1dbf46139c9ad744f8d446fa",
+    contractAddress: "e08ec0611dc2a4eefde094303cab14e9c18c4473d1f2c8269fa2b2bfa944f44a",
     circuitId: "createRequirement",
     args: [id, VerdeProof.MetricType.RECYCLED_CONTENT, BigInt(thresholdPercent * 100), false, 0n, 0n],
     privateStateId: "verdeProofPrivateState",

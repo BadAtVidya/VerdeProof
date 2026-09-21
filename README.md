@@ -4,6 +4,27 @@ Privacy-preserving compliance proofs for supply chains.
 
 [![CI](https://github.com/BadAtVidya/VerdeProof/actions/workflows/ci.yml/badge.svg)](https://github.com/BadAtVidya/VerdeProof/actions/workflows/ci.yml) [GitHub repository](https://github.com/BadAtVidya/VerdeProof)
 
+> Prove what matters. Keep what’s yours.
+
+## Live Demo
+
+[Open VerdeProof on Midnight Preprod](https://verde-proof.vercel.app/)
+
+## Contract Address
+
+| Network | Address |
+|---|---|
+| Preprod | `e08ec0611dc2a4eefde094303cab14e9c18c4473d1f2c8269fa2b2bfa944f44a` |
+
+This is the currently deployed contract. A Level 6 redeploy must replace this value after the updated contract is submitted and indexed.
+
+## Tech Stack
+
+- Midnight Preprod and Compact smart contracts
+- Next.js, React, TypeScript, and Node.js 22
+- 1AM browser wallet for connection, proving, balancing, and signing
+- Vitest contract tests and GitHub Actions CI
+
 VerdeProof lets a supplier prove that a product meets a buyer's sustainability or material requirement without exposing confidential manufacturing data. A trusted lab issues signed evidence, the supplier keeps the measurement private, and the buyer receives a verifiable on-chain result.
 
 ## Links
@@ -84,7 +105,7 @@ The verifier can confirm the result without learning the underlying measurement.
 ### Deployed contract
 
 ```text
-ee2bba3a7df6ffc726d29d8b020ee70efbec5aed1dbf46139c9ad744f8d446fa
+e08ec0611dc2a4eefde094303cab14e9c18c4473d1f2c8269fa2b2bfa944f44a
 ```
 
 The frontend is pinned to this address in [`lib/contract.ts`](./lib/contract.ts). Console writes and verifier reads target this contract only.
@@ -163,7 +184,7 @@ All captures below are real landscape `1600 × 900` screenshots from the running
 |---|---|---|
 | ![VerdeProof landing page](./public/screenshots/landing.png) | ![VerdeProof live console](./public/screenshots/console.png) | ![VerdeProof live verifier](./public/screenshots/verifier.png) |
 
-## How to run locally
+## Setup & Run Locally
 
 ### Prerequisites
 
@@ -199,6 +220,14 @@ npm run dev
 ```
 
 Open [http://localhost:3000/](http://localhost:3000/).
+
+## Run Tests
+
+```bash
+npm test
+```
+
+This compiles the Compact contract and runs the 16-test contract suite.
 
 ## How to use the live console
 
@@ -260,6 +289,37 @@ Latest local result: **16 tests passed**.
 ```bash
 npm test
 ```
+
+## Usage Guide
+
+See [`docs/USAGE.md`](./docs/USAGE.md) for Preprod setup, first transaction steps, privacy guidance, and troubleshooting.
+
+## Feedback & Iterations
+
+See [`docs/FEEDBACK.md`](./docs/FEEDBACK.md) for the Level 5 feedback analysis and Level 6 improvement record.
+
+Top changes from user feedback:
+
+- Added plain-English privacy, workflow, and next-step guidance.
+- Added launch onboarding, first-transaction, and demo instructions.
+- Added wallet-only user tracking and documented mobile/confirmation QA follow-up.
+
+## Level 6 Users
+
+See [`LAUNCH_USERS.md`](./LAUNCH_USERS.md) for the 20-user Preprod launch cohort (**20 / 20** complete). Level 5 validation evidence is listed in [`USERS.md`](./USERS.md): 72 unique wallet addresses from the supplied feedback export.
+
+## Product X Profile
+
+To be added after the product profile is created.
+
+## Brand Assets
+
+See [`BRAND_BRIEF.md`](./BRAND_BRIEF.md). Logo and banner links remain to be added manually.
+
+## Onboarding and Demo
+
+- [`ONBOARDING.md`](./ONBOARDING.md) — message for launch users.
+- [`DEMO_VIDEO_CHECKLIST.md`](./DEMO_VIDEO_CHECKLIST.md) — final submission recording checklist.
 
 ## CI/CD
 

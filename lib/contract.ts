@@ -4,7 +4,7 @@ import { ContractState } from "@midnight-ntwrk/compact-runtime";
 import * as VerdeProof from "../contracts/src/managed/verdeproof/contract/index.js";
 import { fromHex } from "./midnight";
 
-export const CONTRACT_ADDRESS = "ee2bba3a7df6ffc726d29d8b020ee70efbec5aed1dbf46139c9ad744f8d446fa";
+export const CONTRACT_ADDRESS = "e08ec0611dc2a4eefde094303cab14e9c18c4473d1f2c8269fa2b2bfa944f44a";
 export const PRIVATE_STATE_ID = "verdeProofPrivateState";
 
 export type LiveContractSnapshot = {
