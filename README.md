@@ -304,6 +304,21 @@ Top changes from user feedback:
 - Added launch onboarding, first-transaction, and demo instructions.
 - Added wallet-only user tracking and documented mobile/confirmation QA follow-up.
 
+### Selected User Feedback & UI/UX Implementations
+
+| Name | Email | Feedback | Solution | Commit |
+|---|---|---|---|---|
+| Hardika Kathlewar | hardikakathlewar19@gmail.com | Pretty easy to fill in — knew what to enter without reading it twice. | Increased touch target height and mobile input spacing for range controls in console. | [`0af8e44`](https://github.com/BadAtVidya/VerdeProof/commit/0af8e44611e070eba29f33ef71ee26777ff65923) |
+| Mayank Sengupta | includemayank@gmail.com | Would add a line clarifying exactly who can see the submitted details. | Added tooltip clarifying public contract address visibility vs private evidence. | [`65c96d6`](https://github.com/BadAtVidya/VerdeProof/commit/65c96d6f9a0840b2a75369c026046e7f7ed6f345) |
+| Rajjoo Bhai | bhairajjoo@gmail.com | Please make it clear upfront what sensitive info should never be entered here. | Updated setup panel description warning users never to input sensitive raw data directly. | [`265c768`](https://github.com/BadAtVidya/VerdeProof/commit/265c7685bdbeae4a7b5790a9ee2b3e8e12d46e91) |
+| Ayush Yadav | ay24sh24@gmail.com | A quick preview after submitting would help show what happens next. | Added post-submission status guidance in the requirement preview card. | [`233fac1`](https://github.com/BadAtVidya/VerdeProof/commit/233fac10d54a2dbb7df15ef2cebc6079c6ce097e) |
+| Bipronil Ghosh | bipronilg@gmail.com | One of the input fields could show a sample so people know what format to use. | Added explicit basis point format example under the recycled content threshold slider. | [`fb3ef81`](https://github.com/BadAtVidya/VerdeProof/commit/fb3ef81edbfa5cc0fb5a8e1b65e91bc470438cf1) |
+| Jainmiah Shaik | skjainmiah@gmail.com | The 1–5 scale was familiar. Maybe add labels so people know what each end means. | Added verification status scale legend (1 = Unverified, 5 = Full Proof) to receipt footer. | [`74e7edf`](https://github.com/BadAtVidya/VerdeProof/commit/74e7edf5df4216833d76e73cbe17a2dbbbf69ae4) |
+| Amit Kumar Jha | amitjha.8815@gmail.com | It would be helpful to know upfront what document types are supported. | Added supported document format tags (PDF/JSON/CSV) to deployment policy list. | [`3a8960c`](https://github.com/BadAtVidya/VerdeProof/commit/3a8960c40e34c97984f4756570caebbc3eb77926) |
+| Devansh Rao | devansh_rao11@gmail.com | I suggest clearer onboarding steps to explain the benefits more explicitly. | Added clear 3-step action summary text to main workspace console header. | [`92f1d4c`](https://github.com/BadAtVidya/VerdeProof/commit/92f1d4c98762e1bdcbfaee5a0edae4a7e937d2f9) |
+| Meera Iyer | meera.iyer99@gmail.com | Consider clarifying the user journey during the verification step. | Enhanced public verifier link text on landing page to explicitly describe privacy preservation. | [`587016a`](https://github.com/BadAtVidya/VerdeProof/commit/587016a3a7ecfaef23ec9590cb7c631a7bcbcff8) |
+| Jiji Philip Varghese | jijlife@gmail.com | Whole thing was fast. A short success screen would make the ending feel more complete. | Enhanced requirement publication toast message with immediate verification feedback prompt. | [`4e26cc5`](https://github.com/BadAtVidya/VerdeProof/commit/4e26cc58763ae16892550bf22d4f20b3dd1d2975) |
+
 ## Level 6 Users
 
 See [`LAUNCH_USERS.md`](./LAUNCH_USERS.md) for the 20-user Preprod launch cohort (**20 / 20** complete). Level 5 validation evidence is listed in [`USERS.md`](./USERS.md): 72 unique wallet addresses from the supplied feedback export.
