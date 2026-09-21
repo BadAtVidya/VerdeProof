@@ -16,7 +16,7 @@ Privacy-preserving compliance proofs for supply chains.
 |---|---|
 | Preprod | `e08ec0611dc2a4eefde094303cab14e9c18c4473d1f2c8269fa2b2bfa944f44a` |
 
-This is the currently deployed contract. A Level 6 redeploy must replace this value after the updated contract is submitted and indexed.
+This is the current Level 6 Preprod deployment. Frontend reads and writes target this address.
 
 ## Tech Stack
 
@@ -330,6 +330,20 @@ Brand system is documented in [`BRAND_BRIEF.md`](./BRAND_BRIEF.md). Available re
 ## Onboarding
 
 - [`ONBOARDING.md`](./ONBOARDING.md) — message for launch users.
+
+## Level 6 Submission Checklist
+
+- [x] Updated contract deployed to Midnight Preprod.
+- [x] Current Preprod address recorded in README and frontend code.
+- [x] Four feedback-driven Level 6 improvements documented in [`docs/FEEDBACK.md`](./docs/FEEDBACK.md).
+- [x] `docs/USAGE.md` includes Preprod setup and first-transaction instructions.
+- [x] `LAUNCH_USERS.md` contains 20 wallet-only onboarding records.
+- [x] Final README sections, privacy model, tech stack, setup, tests, CI, feedback, users, X profile, and brand assets present.
+- [x] Brand brief and onboarding script present.
+- [x] Existing demo video linked in README.
+- [x] 30 meaningful commits present in repository history.
+
+External X post activity and live wallet/indexer state must be checked on the linked services during submission.
 
 ## CI/CD
 
