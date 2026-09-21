@@ -2,6 +2,7 @@ name: CI
 
 env:
   COMPACT_VERSION: 0.31.1
+  COMPACT_INSTALLER_URL: https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.2/compact-installer.sh
   GITHUB_TOKEN: ${{ github.token }}
 
 on:
@@ -31,8 +32,11 @@ jobs:
 
       - name: Install Compact compiler
         run: |
-          curl --proto '=https' --tlsv1.2 -LsSf \
-            https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.2/compact-installer.sh \
+          set -o pipefail
+          curl --fail --silent --show-error --location \
+            --retry 8 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 20 --max-time 180 \
+            "$COMPACT_INSTALLER_URL" \
             | sh -s -- --quiet
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/compact" update "$COMPACT_VERSION"
@@ -64,8 +68,11 @@ jobs:
       - name: Install Compact compiler
         working-directory: contracts
         run: |
-          curl --proto '=https' --tlsv1.2 -LsSf \
-            https://github.com/midnightntwrk/compact/releases/download/compact-v0.5.2/compact-installer.sh \
+          set -o pipefail
+          curl --fail --silent --show-error --location \
+            --retry 8 --retry-all-errors --retry-delay 5 \
+            --connect-timeout 20 --max-time 180 \
+            "$COMPACT_INSTALLER_URL" \
             | sh -s -- --quiet
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/compact" update "$COMPACT_VERSION"
