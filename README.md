@@ -12,6 +12,8 @@ VerdeProof lets a supplier prove that a product meets a buyer's sustainability o
 |---|---|
 | Live application | [Open VerdeProof](https://verde-proof.vercel.app/) |
 | Demo video | [Watch on Google Drive](https://drive.google.com/file/d/1I5y61NCnGFgnaaJU9TE7HtSNmJ-HCPMQ/view?usp=sharing) |
+| Feedback form | [Open Google Form](https://forms.gle/cPGXRxkRfYbRibHr6) |
+| Project sheet | [Open Google Sheet](https://docs.google.com/spreadsheets/d/1YHq1RN4AvBvMVHUdhl5xSjDveUDxo0BTzei13aU8FX4/edit?usp=sharing) |
 | Contract | [`verdeproof.compact`](https://github.com/BadAtVidya/VerdeProof/blob/main/contracts/src/verdeproof.compact) |
 | X | [@VerthProof](https://x.com/VerthProof) |
 
