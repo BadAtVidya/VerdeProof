@@ -29,4 +29,6 @@ Use this file for users onboarded after the Level 6 redeploy. Do not add names, 
 
 Current count: **20 / 20**
 
+Transaction completion: **20 / 20 finalized**. See [`docs/USER_TRANSACTIONS.md`](./docs/USER_TRANSACTIONS.md) for wallet-to-transaction mappings, explorer links, and block evidence.
+
 These are the last 20 rows from the supplied feedback export, designated as the Level 6 onboarding cohort. Level 5 validation wallets are listed in [`USERS.md`](./USERS.md).

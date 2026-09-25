@@ -325,7 +325,7 @@ Top changes from user feedback:
 
 ## Level 6 Users
 
-See [`LAUNCH_USERS.md`](./LAUNCH_USERS.md) for the 20-user Preprod launch cohort (**20 / 20** complete). Level 5 validation evidence is listed in [`USERS.md`](./USERS.md): 72 unique wallet addresses from the supplied feedback export.
+See [`LAUNCH_USERS.md`](./LAUNCH_USERS.md) for the 20-user Preprod launch cohort (**20 / 20** complete) and [`docs/USER_TRANSACTIONS.md`](./docs/USER_TRANSACTIONS.md) for 20 finalized wallet-to-contract transactions. Level 5 validation evidence is listed in [`USERS.md`](./USERS.md): 72 unique wallet addresses from the supplied feedback export.
 
 ## Product X Profile
 
