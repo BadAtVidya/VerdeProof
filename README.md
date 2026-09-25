@@ -18,11 +18,15 @@ Privacy-preserving compliance proofs for supply chains.
 
 This is the current Level 6 Preprod deployment. Frontend reads and writes target this address.
 
+[Verify current deployment and transaction evidence](./docs/DEPLOYMENT_EVIDENCE.md).
+
 ## Tech Stack
 
 - Midnight Preprod and Compact smart contracts
 - Next.js, React, TypeScript, and Node.js 22
 - 1AM browser wallet for connection, proving, balancing, and signing
+- Official `@midnight-ntwrk/dapp-connector-api` wallet connection
+- Encrypted `@midnight-ntwrk/midnight-js-level-private-state-provider` storage
 - Vitest contract tests and GitHub Actions CI
 
 VerdeProof lets a supplier prove that a product meets a buyer's sustainability or material requirement without exposing confidential manufacturing data. A trusted lab issues signed evidence, the supplier keeps the measurement private, and the buyer receives a verifiable on-chain result.
@@ -36,7 +40,7 @@ VerdeProof lets a supplier prove that a product meets a buyer's sustainability o
 | Feedback form | [Open Google Form](https://forms.gle/cPGXRxkRfYbRibHr6) |
 | Project sheet | [Open Google Sheet](https://docs.google.com/spreadsheets/d/1YHq1RN4AvBvMVHUdhl5xSjDveUDxo0BTzei13aU8FX4/edit?usp=sharing) |
 | Contract | [`verdeproof.compact`](https://github.com/BadAtVidya/VerdeProof/blob/main/contracts/src/verdeproof.compact) |
-| X | [@VerthProof](https://x.com/VerthProof) |
+| X | [@VerdeProof_](https://x.com/VerdeProof_) |
 
 ## The problem
 
@@ -170,7 +174,7 @@ Live public verifier. It reads verification records from the deployed contract a
 
 ### `/deploy`
 
-Browser-only deployment flow following the 1AM wallet pattern. It explicitly sets `preprod`, loads generated ZK assets, uses wallet proving/balancing/submission, and displays the resulting contract address.
+Browser-only deployment flow using the official connector API and Midnight `deployContract()`. It locks to `preprod`, loads generated ZK assets, uses wallet proving/balancing/signing/submission, waits for finalization, and displays contract plus transaction evidence.
 
 ### `/proofs`, `/requirements`, `/credentials`, `/labs`, `/settings`
 
@@ -247,16 +251,16 @@ The current deployed contract has no fabricated labs, credentials, or proofs. A 
 
 The deployment flow is intentionally client-side:
 
-1. Detect `window.midnight["1am"]`.
-2. Connect with `wallet.connect("preprod")`.
+1. Discover typed `InitialAPI` from `@midnight-ntwrk/dapp-connector-api`.
+2. Connect with `InitialAPI.connect("preprod")` and verify `getConnectionStatus()`.
 3. Set the Midnight network ID before wallet or contract operations.
 4. Load verifier/prover assets from `/public/zk/verdeproof`.
 5. Request the proving provider from 1AM.
-6. Create the unproven deployment transaction.
-7. Let the wallet balance, prove, sign, and submit it.
-8. Display the deployed contract address.
+6. Call Midnight `deployContract()` with encrypted private state.
+7. Let 1AM balance and sign before submitting finalized transaction.
+8. Display contract address, genuine ledger transaction ID/hash, and finalized block evidence.
 
-No funded server wallet is used. Private state is persisted locally in the browser so subsequent wallet sessions can reuse the same witness state.
+No funded server wallet is used. Midnight Level private-state provider persists encrypted, account-scoped state. User supplies storage password; app never stores plaintext password.
 
 ## Development commands
 
@@ -325,7 +329,7 @@ See [`LAUNCH_USERS.md`](./LAUNCH_USERS.md) for the 20-user Preprod launch cohort
 
 ## Product X Profile
 
-[VerdeProof on X — @VerthProof](https://x.com/VerthProof)
+[VerdeProof on X — @VerdeProof_](https://x.com/VerdeProof_)
 
 Profile bio:
 
